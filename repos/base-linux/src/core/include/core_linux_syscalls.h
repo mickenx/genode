@@ -22,9 +22,9 @@
 #include <sys/resource.h>
 #include <fcntl.h>
 #undef size_t
-
+#include <sys/syscall.h>
 #include <sys/ioctl.h>
-
+#define UNUSED(x) (void)(x)
 
 /*******************************************************
  ** Functions used by core's ram-session support code **
@@ -32,7 +32,7 @@
 
 inline int lx_mkdir(char const *pathname, mode_t mode)
 {
-	return lx_syscall(SYS_mkdir, pathname, mode);
+	return lx_syscall(SYS_mkdirat, AT_FDCWD,pathname, mode);
 }
 
 
@@ -44,7 +44,7 @@ inline int lx_ftruncate(int fd, unsigned long length)
 
 inline int lx_unlink(const char *fname)
 {
-	return lx_syscall(SYS_unlink, fname);
+	return lx_syscall(SYS_unlinkat,AT_FDCWD, fname);
 }
 
 
@@ -52,16 +52,16 @@ inline int lx_unlink(const char *fname)
  ** Functions used by core's rom-session support code **
  *******************************************************/
 
-inline int lx_open(const char *pathname, int flags, mode_t mode = 0)
+inline int lx_open(const char *pathname, int flags, mode_t mode= 0)
 {
-	return lx_syscall(SYS_open, pathname, flags, mode);
+	return lx_syscall(SYS_openat,AT_FDCWD, pathname, flags, mode);
 }
 
 
-inline int lx_stat(const char *path, struct stat64 *buf)
+inline int lx_stat(const char *path, struct statx *buf)
 {
 #ifdef _LP64
-	return lx_syscall(SYS_stat, path, buf);
+	return lx_syscall(SYS_statx, AT_FDCWD,path,0,0,buf);
 #else
 	return lx_syscall(SYS_stat64, path, buf);
 #endif
@@ -74,12 +74,17 @@ inline int lx_stat(const char *path, struct stat64 *buf)
 
 inline int lx_ioperm(unsigned long from, unsigned long num, int turn_on)
 {
-	return lx_syscall(SYS_ioperm, from, num, turn_on);
+	UNUSED(from);
+	UNUSED(num);
+	UNUSED(turn_on);
+	return 0;
 }
 
 inline int lx_iopl(int level)
 {
-	return lx_syscall(SYS_iopl, level);
+	UNUSED(level);
+	return 0;
+	//return lx_syscall(SYS_iopl, level);
 }
 
 /**************************************************
@@ -93,7 +98,7 @@ inline int lx_ioctl_iomem(int fd, unsigned long phys, Genode::size_t offset)
 		unsigned long phys;
 		Genode::size_t length;
 	} range = {phys, offset};
-
+	return(0);
 	return lx_syscall(SYS_ioctl, fd, _IOW('g', 1, void *), &range);
 }
 
@@ -255,7 +260,7 @@ inline int lx_connect(int sockfd, const struct sockaddr *serv_addr,
 
 inline int lx_pipe(int pipefd[2])
 {
-	return lx_syscall(SYS_pipe, pipefd);
+	return lx_syscall(SYS_pipe2, pipefd);
 }
 
 
